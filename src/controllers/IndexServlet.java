@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.persistence.EntityManager;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -16,7 +15,7 @@ import utils.DBUtil;
 /**
  * Servlet implementation class IndexServlet
  */
-@WebServlet("/Index")
+@WebServlet("/index")
 public class IndexServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
@@ -35,16 +34,25 @@ public class IndexServlet extends HttpServlet {
 
 		EntityManager em = DBUtil.createEntityManager();
 
-        List<Message> messages = em.createNamedQuery("getAllMessages", Message.class).getResultList();
-        em.close();
+		 int page = 1;
+	        try {
+	            page = Integer.parseInt(request.getParameter("page"));
+	        } catch(NumberFormatException e) {}
 
-        request.setAttribute("messages", messages);
+	        // 最大件数と開始位置を指定してメッセージを取得
+	        List<Message> messages = em.createNamedQuery("getAllMessages", Message.class)
+	                                   .setFirstResult(15 * (page - 1))
+	                                   .setMaxResults(15)
+	                                   .getResultList();
 
+	        // 全件数を取得
+	        long messages_count = (long)em.createNamedQuery("getMessagesCount", Long.class)
+	                                      .getSingleResult();
 
-        RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/messages/index.jsp");
-        rd.forward(request, response);
+	        em.close();
+
+	        request.setAttribute("messages", messages);
+	        request.setAttribute("messages_count", messages_count);     // 全件数
+	        request.setAttribute("page", page);
 	}
-
-
-
 }
